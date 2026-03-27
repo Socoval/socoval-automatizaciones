@@ -172,41 +172,36 @@ archivo = st.file_uploader("", type=["csv", "xlsx"], label_visibility="collapsed
 if archivo is not None:
     try:
         if archivo.name.endswith('.xlsx'):
-            df = pd.read_excel(archivo, engine='openpyxl')
+            df = pd.read_excel(archivo, engine='openpyxl', index_col=False)
         else:
             df = pd.read_csv(
                 archivo,
                 sep=';',
                 encoding='latin-1',
                 decimal=',',
-                thousands='.'
+                thousands='.',
+                index_col=False
             )
 
         if df.empty:
             st.markdown('<div class="alert-error">El archivo esta vacio. Sube un archivo con datos.</div>', unsafe_allow_html=True)
             st.stop()
 
-        if len(df.columns) not in [15, 16]:
-            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 15 o 16 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
+        # ── Eliminar columnas Y que SAP agrega automaticamente ──
+        df = df[[c for c in df.columns if not df[c].dropna().astype(str).str.strip().eq('Y').all()]]
+
+        if len(df.columns) != 15:
+            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 15 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
             st.stop()
 
         # ── Renombrar columnas ────────────────────────────────
-        if len(df.columns) == 16:
-            df.columns = [
-                'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
-                'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
-                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
-                'Pagado', 'Saldo', 'Eliminar'
-            ]
-            df = df.drop(columns=['Eliminar', 'Neto', 'IVA'])
-        else:
-            df.columns = [
-                'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
-                'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
-                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
-                'Pagado', 'Saldo'
-            ]
-            df = df.drop(columns=['Neto', 'IVA'])
+        df.columns = [
+            'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
+            'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
+            'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
+            'Pagado', 'Saldo'
+        ]
+        df = df.drop(columns=['Neto', 'IVA'])
 
         # ── Convertir fechas ──────────────────────────────────
         df['Fecha_Vencimiento']     = pd.to_datetime(df['Fecha_Vencimiento'],     dayfirst=True, errors='coerce')
