@@ -284,7 +284,7 @@ if archivo is not None:
 
         # ── Generar Excel ─────────────────────────────────────
         fecha_str = hoy.strftime('%d-%m-%Y')
-        nombre_archivo = f'Control de Facturas - {fecha_str}.xlsx'
+        nombre_archivo = f'Resultado control de Facturas - {fecha_str}.xlsx'
         FIRMA = 'Automatizacion creada por Pedro Munoz Ballier'
 
         buffer = BytesIO()
