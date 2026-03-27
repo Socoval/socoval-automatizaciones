@@ -186,24 +186,25 @@ if archivo is not None:
             st.markdown('<div class="alert-error">El archivo esta vacio. Sube un archivo con datos.</div>', unsafe_allow_html=True)
             st.stop()
 
-        if len(df.columns) not in [13, 14]:
-            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 13 o 14 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
+        if len(df.columns) not in [15, 16]:
+            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 15 o 16 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
             st.stop()
 
         # ── Renombrar columnas ────────────────────────────────
-        if len(df.columns) == 14:
+        if len(df.columns) == 16:
             df.columns = [
                 'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
                 'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
                 'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
-                'Eliminar'
+                'Pagado', 'Saldo', 'Eliminar'
             ]
             df = df.drop(columns=['Eliminar', 'Neto', 'IVA'])
         else:
             df.columns = [
                 'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
                 'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
-                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto'
+                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
+                'Pagado', 'Saldo'
             ]
             df = df.drop(columns=['Neto', 'IVA'])
 
@@ -222,18 +223,18 @@ if archivo is not None:
         # ── Vencidas ──────────────────────────────────────────
         vencidas = df[df['Dias'] < 0].copy()
         vencidas['Dias_Vencido'] = vencidas['Dias'].abs()
-        vencidas['0-30 dias']  = vencidas['Bruto'].where(vencidas['Dias_Vencido'] <= 30)
-        vencidas['30-60 dias'] = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 30) & (vencidas['Dias_Vencido'] <= 60))
-        vencidas['60-90 dias'] = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 60) & (vencidas['Dias_Vencido'] <= 90))
-        vencidas['Mas_90 dias'] = vencidas['Bruto'].where(vencidas['Dias_Vencido'] > 90)
+        vencidas['0-30 dias']   = vencidas['Saldo'].where(vencidas['Dias_Vencido'] <= 30)
+        vencidas['30-60 dias']  = vencidas['Saldo'].where((vencidas['Dias_Vencido'] > 30) & (vencidas['Dias_Vencido'] <= 60))
+        vencidas['60-90 dias']  = vencidas['Saldo'].where((vencidas['Dias_Vencido'] > 60) & (vencidas['Dias_Vencido'] <= 90))
+        vencidas['Mas_90 dias'] = vencidas['Saldo'].where(vencidas['Dias_Vencido'] > 90)
         vencidas = vencidas.sort_values('Dias_Vencido', ascending=True)
 
         # ── Por vencer ────────────────────────────────────────
         por_vencer = df[df['Dias'] >= 0].copy()
         por_vencer['Dias_Faltantes'] = por_vencer['Dias']
-        por_vencer['0-30 dias']  = por_vencer['Bruto'].where(por_vencer['Dias_Faltantes'] <= 30)
-        por_vencer['30-60 dias'] = por_vencer['Bruto'].where((por_vencer['Dias_Faltantes'] > 30) & (por_vencer['Dias_Faltantes'] <= 60))
-        por_vencer['60-90 dias'] = por_vencer['Bruto'].where((por_vencer['Dias_Faltantes'] > 60) & (por_vencer['Dias_Faltantes'] <= 90))
+        por_vencer['0-30 dias']  = por_vencer['Saldo'].where(por_vencer['Dias_Faltantes'] <= 30)
+        por_vencer['30-60 dias'] = por_vencer['Saldo'].where((por_vencer['Dias_Faltantes'] > 30) & (por_vencer['Dias_Faltantes'] <= 60))
+        por_vencer['60-90 dias'] = por_vencer['Saldo'].where((por_vencer['Dias_Faltantes'] > 60) & (por_vencer['Dias_Faltantes'] <= 90))
         por_vencer = por_vencer.sort_values('Dias_Faltantes', ascending=True)
 
         st.markdown(f"""
