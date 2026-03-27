@@ -187,8 +187,8 @@ if archivo is not None:
             st.markdown('<div class="alert-error">El archivo esta vacio. Sube un archivo con datos.</div>', unsafe_allow_html=True)
             st.stop()
 
-        # ── Eliminar columnas Y que SAP agrega automaticamente ──
-        df = df[[c for c in df.columns if not df[c].dropna().astype(str).str.strip().eq('Y').all()]]
+        # ── Eliminar ultima columna que SAP agrega automaticamente ──
+        df = df.iloc[:, :-1]
 
         if len(df.columns) != 15:
             st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 15 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
@@ -202,12 +202,6 @@ if archivo is not None:
             'Pagado', 'Saldo'
         ]
         df = df.drop(columns=['Neto', 'IVA'])
-
-        # ── Limpiar Pagado y Saldo (SAP omite estos campos en algunos registros) ──
-        df['Bruto']  = pd.to_numeric(df['Bruto'],  errors='coerce')
-        df['Pagado'] = pd.to_numeric(df['Pagado'], errors='coerce').fillna(0)
-        df['Saldo']  = pd.to_numeric(df['Saldo'],  errors='coerce')
-        df['Saldo']  = df['Saldo'].fillna(df['Bruto'] - df['Pagado'])
 
         # ── Convertir fechas ──────────────────────────────────
         df['Fecha_Vencimiento']     = pd.to_datetime(df['Fecha_Vencimiento'],     dayfirst=True, errors='coerce')
