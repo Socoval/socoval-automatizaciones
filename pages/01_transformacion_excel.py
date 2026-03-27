@@ -287,15 +287,46 @@ if archivo is not None:
         nombre_archivo = f'Resultado control de Facturas - {fecha_str}.xlsx'
         FIRMA = 'Automatizacion creada por Pedro Munoz Ballier'
 
+        # ── Construir hoja "Todas las Facturas" ───────────────
+        vencidas_todas   = vencidas.drop(columns=['Dias']).copy()
+        por_vencer_todas = por_vencer.drop(columns=['Dias']).copy()
+
+        vencidas_todas['Estado']   = 'Vencida'
+        por_vencer_todas['Estado'] = 'Por Vencer'
+
+        # Renombrar columnas de dias para unificar
+        vencidas_todas   = vencidas_todas.rename(columns={'Dias_Vencido': 'Dias'})
+        vencidas_todas['Dias'] = vencidas_todas['Dias'] * -1
+        por_vencer_todas = por_vencer_todas.rename(columns={'Dias_Faltantes': 'Dias'})
+
+        # Insertar columna Estado entre Nombre_Proyecto y Bruto
+        cols_vencidas   = list(vencidas_todas.columns)
+        cols_por_vencer = list(por_vencer_todas.columns)
+
+        def reordenar(df):
+            cols = [c for c in df.columns if c not in ['Estado', 'Bruto', 'Dias']]
+            idx = cols.index('Nombre_Proyecto') + 1
+            cols.insert(idx, 'Estado')
+            cols.append('Bruto')
+            cols.append('Dias')
+            tramos = [c for c in df.columns if c not in cols]
+            return df[cols + tramos]
+
+        vencidas_todas   = reordenar(vencidas_todas)
+        por_vencer_todas = reordenar(por_vencer_todas)
+
+        todas = pd.concat([vencidas_todas, por_vencer_todas], ignore_index=True)
+
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            vencidas.drop(columns=['Dias']).to_excel(writer,   sheet_name='Vencidas',   index=False)
-            por_vencer.drop(columns=['Dias']).to_excel(writer, sheet_name='Por Vencer', index=False)
+            todas.to_excel(writer,                          sheet_name='Todas las Facturas', index=False)
+            vencidas.drop(columns=['Dias']).to_excel(writer,   sheet_name='Vencidas',        index=False)
+            por_vencer.drop(columns=['Dias']).to_excel(writer, sheet_name='Por Vencer',      index=False)
 
         buffer.seek(0)
         wb = load_workbook(buffer)
 
-        for nombre_hoja in ['Vencidas', 'Por Vencer']:
+        for nombre_hoja in ['Todas las Facturas', 'Vencidas', 'Por Vencer']:
             ws = wb[nombre_hoja]
             col_fin  = get_column_letter(ws.max_column)
             fila_fin = ws.max_row
