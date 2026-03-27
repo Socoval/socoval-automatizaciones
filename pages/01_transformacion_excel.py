@@ -222,10 +222,10 @@ if archivo is not None:
         # ── Vencidas ──────────────────────────────────────────
         vencidas = df[df['Dias'] < 0].copy()
         vencidas['Dias_Vencido'] = vencidas['Dias'].abs()
-        vencidas['0-30 dias']    = vencidas['Bruto'].where(vencidas['Dias_Vencido'] <= 30)
-        vencidas['30-60 dias']   = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 30)  & (vencidas['Dias_Vencido'] <= 60))
-        vencidas['90-120 dias']  = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 60)  & (vencidas['Dias_Vencido'] <= 120))
-        vencidas['Mas_120 dias'] = vencidas['Bruto'].where(vencidas['Dias_Vencido'] > 120)
+        vencidas['0-30 dias']  = vencidas['Bruto'].where(vencidas['Dias_Vencido'] <= 30)
+        vencidas['30-60 dias'] = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 30) & (vencidas['Dias_Vencido'] <= 60))
+        vencidas['60-90 dias'] = vencidas['Bruto'].where((vencidas['Dias_Vencido'] > 60) & (vencidas['Dias_Vencido'] <= 90))
+        vencidas['Mas_90 dias'] = vencidas['Bruto'].where(vencidas['Dias_Vencido'] > 90)
         vencidas = vencidas.sort_values('Dias_Vencido', ascending=True)
 
         # ── Por vencer ────────────────────────────────────────
