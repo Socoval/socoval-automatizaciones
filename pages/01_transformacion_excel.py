@@ -203,6 +203,12 @@ if archivo is not None:
         ]
         df = df.drop(columns=['Neto', 'IVA'])
 
+        # ── Limpiar Pagado y Saldo (SAP omite estos campos en algunos registros) ──
+        df['Bruto']  = pd.to_numeric(df['Bruto'],  errors='coerce')
+        df['Pagado'] = pd.to_numeric(df['Pagado'], errors='coerce').fillna(0)
+        df['Saldo']  = pd.to_numeric(df['Saldo'],  errors='coerce')
+        df['Saldo']  = df['Saldo'].fillna(df['Bruto'] - df['Pagado'])
+
         # ── Convertir fechas ──────────────────────────────────
         df['Fecha_Vencimiento']     = pd.to_datetime(df['Fecha_Vencimiento'],     dayfirst=True, errors='coerce')
         df['Fecha_Contabilizacion'] = pd.to_datetime(df['Fecha_Contabilizacion'], dayfirst=True, errors='coerce')
