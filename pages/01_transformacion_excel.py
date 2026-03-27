@@ -162,39 +162,50 @@ if st.button("← Volver al panel"):
 st.markdown("""
 <div class="step-box">
     <div class="step-label">Paso 1</div>
-    <div class="step-title">Sube el archivo CSV exportado desde SAP</div>
-    <div class="step-desc">El archivo debe estar en formato .csv exportado desde SAP Business One. Separador: punto y coma (;) · Codificacion: Latin-1</div>
+    <div class="step-title">Sube el archivo exportado desde SAP</div>
+    <div class="step-desc">Formatos aceptados: .csv (separador ; · Latin-1) o .xlsx exportado desde SAP Business One.</div>
 </div>
 """, unsafe_allow_html=True)
 
-archivo = st.file_uploader("", type=["csv"], label_visibility="collapsed")
+archivo = st.file_uploader("", type=["csv", "xlsx"], label_visibility="collapsed")
 
 if archivo is not None:
     try:
-        df = pd.read_csv(
-            archivo,
-            sep=';',
-            encoding='latin-1',
-            decimal=',',
-            thousands='.'
-        )
+        if archivo.name.endswith('.xlsx'):
+            df = pd.read_excel(archivo, engine='openpyxl')
+        else:
+            df = pd.read_csv(
+                archivo,
+                sep=';',
+                encoding='latin-1',
+                decimal=',',
+                thousands='.'
+            )
 
         if df.empty:
             st.markdown('<div class="alert-error">El archivo esta vacio. Sube un archivo con datos.</div>', unsafe_allow_html=True)
             st.stop()
 
-        if len(df.columns) < 14:
-            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 14 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
+        if len(df.columns) not in [13, 14]:
+            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 13 o 14 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
             st.stop()
 
         # ── Renombrar columnas ────────────────────────────────
-        df.columns = [
-            'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
-            'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
-            'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
-            'Eliminar'
-        ]
-        df = df.drop(columns=['Eliminar', 'Neto', 'IVA'])
+        if len(df.columns) == 14:
+            df.columns = [
+                'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
+                'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
+                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
+                'Eliminar'
+            ]
+            df = df.drop(columns=['Eliminar', 'Neto', 'IVA'])
+        else:
+            df.columns = [
+                'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
+                'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
+                'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto'
+            ]
+            df = df.drop(columns=['Neto', 'IVA'])
 
         # ── Convertir fechas ──────────────────────────────────
         df['Fecha_Vencimiento']     = pd.to_datetime(df['Fecha_Vencimiento'],     dayfirst=True, errors='coerce')
