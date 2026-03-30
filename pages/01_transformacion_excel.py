@@ -181,8 +181,8 @@ if archivo is not None:
             st.markdown('<div class="alert-error">El archivo esta vacio. Sube un archivo con datos.</div>', unsafe_allow_html=True)
             st.stop()
 
-        # ── Eliminar ultima columna que SAP agrega automaticamente ──
-        df = df.iloc[:, :-1]
+        # ── Eliminar primera columna (#) y ultima columna (Y) que SAP agrega ──
+        df = df.iloc[:, 1:-1]
 
         # ── Mostrar columnas detectadas para debug ────────────
         n_cols = len(df.columns)
