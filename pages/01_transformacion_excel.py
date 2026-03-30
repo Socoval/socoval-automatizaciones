@@ -27,7 +27,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
 [data-testid="stHeader"] { display: none !important; }
 .stDeployButton { display: none !important; }
 .block-container { padding: 2rem 2rem !important; max-width: 780px !important; }
-
 .firma {
     position: fixed;
     bottom: 14px;
@@ -38,7 +37,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
     letter-spacing: 0.02em;
     pointer-events: none;
 }
-
 .page-header {
     background: #1B3A6B;
     border-radius: 14px;
@@ -51,7 +49,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
 .page-accent { width: 4px; height: 38px; background: #E87722; border-radius: 4px; }
 .page-title { color: #fff; font-size: 1.1rem; font-weight: 600; margin: 0; }
 .page-sub { color: #7A9BC4; font-size: 0.8rem; margin-top: 3px; }
-
 .step-box {
     background: #fff;
     border: 1px solid #E8ECF2;
@@ -69,7 +66,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
 }
 .step-title { font-size: 0.95rem; font-weight: 600; color: #1B3A6B; margin-bottom: 4px; }
 .step-desc { font-size: 0.8rem; color: #8A96A8; line-height: 1.5; margin-bottom: 0; }
-
 .alert-error {
     background: #FFF0F0;
     border: 1px solid #FFCDD2;
@@ -100,7 +96,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
     color: #1B3A6B;
     margin: 12px 0;
 }
-
 .stat-row {
     display: flex;
     gap: 12px;
@@ -118,7 +113,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, .
 .stat-lbl { font-size: 0.72rem; color: #8A96A8; margin-top: 2px; }
 .stat-card.rojo .stat-val { color: #E53935; }
 .stat-card.verde .stat-val { color: #2D9E5F; }
-
 [data-testid="stDownloadButton"] button {
     background-color: #2D9E5F !important;
     color: white !important;
@@ -154,7 +148,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="firma">Automatizaciones desarrolladas por Pedro Muñoz Ballier</div>', unsafe_allow_html=True)
+st.markdown('<div class="firma">Automatizaciones desarrolladas por Pedro Munoz Ballier</div>', unsafe_allow_html=True)
 
 if st.button("← Volver al panel"):
     st.switch_page("app.py")
@@ -190,13 +184,20 @@ if archivo is not None:
         # ── Eliminar ultima columna que SAP agrega automaticamente ──
         df = df.iloc[:, :-1]
 
-        if len(df.columns) != 15:
-            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 15 columnas y se encontraron {len(df.columns)}. Verifica que sea el export correcto de SAP.</div>', unsafe_allow_html=True)
+        # ── Mostrar columnas detectadas para debug ────────────
+        n_cols = len(df.columns)
+
+        if n_cols != 14:
+            st.markdown(f'<div class="alert-error">El archivo no tiene el formato correcto. Se esperaban 14 columnas y se encontraron {n_cols}. Verifica que sea el export correcto de SAP.<br><br>Columnas detectadas: {df.columns.tolist()}</div>', unsafe_allow_html=True)
             st.stop()
 
         # ── Renombrar columnas ────────────────────────────────
+        # Consulta SAP actual (sin columna ID):
+        # NroFactura, CodProveedor, RUT, Proveedor,
+        # FechaContabilizacion, FechaVencimiento, NroPrimario,
+        # CodProyecto, NombreProyecto, Neto, IVA, Bruto, Pagado, Saldo
         df.columns = [
-            'ID', 'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
+            'Nro_Factura', 'Cod_Proveedor', 'RUT', 'Proveedor',
             'Fecha_Contabilizacion', 'Fecha_Vencimiento', 'Nro_Primario',
             'Cod_Proyecto', 'Nombre_Proyecto', 'Neto', 'IVA', 'Bruto',
             'Pagado', 'Saldo'
@@ -206,6 +207,10 @@ if archivo is not None:
         # ── Convertir fechas ──────────────────────────────────
         df['Fecha_Vencimiento']     = pd.to_datetime(df['Fecha_Vencimiento'],     dayfirst=True, errors='coerce')
         df['Fecha_Contabilizacion'] = pd.to_datetime(df['Fecha_Contabilizacion'], dayfirst=True, errors='coerce')
+
+        # ── Convertir columnas numericas ──────────────────────
+        for col in ['Bruto', 'Pagado', 'Saldo']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
         # ── Eliminar duplicados ───────────────────────────────
         antes = len(df)
@@ -283,21 +288,15 @@ if archivo is not None:
         nombre_archivo = f'Resultado control de Facturas - {fecha_str}.xlsx'
         FIRMA = 'Automatizacion creada por Pedro Munoz Ballier'
 
-        # ── Construir hoja "Todas las Facturas" ───────────────
         vencidas_todas   = vencidas.drop(columns=['Dias']).copy()
         por_vencer_todas = por_vencer.drop(columns=['Dias']).copy()
 
         vencidas_todas['Estado']   = 'Vencida'
         por_vencer_todas['Estado'] = 'Por Vencer'
 
-        # Renombrar columnas de dias para unificar
         vencidas_todas   = vencidas_todas.rename(columns={'Dias_Vencido': 'Dias'})
         vencidas_todas['Dias'] = vencidas_todas['Dias'] * -1
         por_vencer_todas = por_vencer_todas.rename(columns={'Dias_Faltantes': 'Dias'})
-
-        # Insertar columna Estado entre Nombre_Proyecto y Bruto
-        cols_vencidas   = list(vencidas_todas.columns)
-        cols_por_vencer = list(por_vencer_todas.columns)
 
         def reordenar(df):
             cols = [c for c in df.columns if c not in ['Estado', 'Bruto', 'Dias']]
@@ -315,9 +314,9 @@ if archivo is not None:
 
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            todas.to_excel(writer,                          sheet_name='Todas las Facturas', index=False)
-            vencidas.drop(columns=['Dias']).to_excel(writer,   sheet_name='Vencidas',        index=False)
-            por_vencer.drop(columns=['Dias']).to_excel(writer, sheet_name='Por Vencer',      index=False)
+            todas.to_excel(writer,                             sheet_name='Todas las Facturas', index=False)
+            vencidas.drop(columns=['Dias']).to_excel(writer,   sheet_name='Vencidas',           index=False)
+            por_vencer.drop(columns=['Dias']).to_excel(writer, sheet_name='Por Vencer',         index=False)
 
         buffer.seek(0)
         wb = load_workbook(buffer)
